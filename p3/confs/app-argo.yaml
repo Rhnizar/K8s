@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/uber-backend-architecture/argocd_app_rrhnizar.git
+    repoURL: https://github.com/Rhnizar/argocd_app_rrhnizar
     path: manifests
     targetRevision: HEAD
   destination:

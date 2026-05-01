@@ -6,7 +6,6 @@ metadata:
 spec:
   project: default
   source:
-    # repoURL: https://github.com/uber-backend-architecture/argocd_app_rrhnizar.git
     repoURL: http://gitea-http.gitea.svc.cluster.local:3000/root/argocd_app_rrhnizar.git
     path: manifests
     targetRevision: HEAD
