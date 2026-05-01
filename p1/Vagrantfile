@@ -25,9 +25,6 @@ Vagrant.configure("2") do |config|
       # Copy the token to the shared /vagrant folder so the Worker can read it
       sudo cp /var/lib/rancher/k3s/server/node-token /vagrant/node-token
       sudo chmod 644 /vagrant/node-token
-      
-      # Set up alias for ease of use
-      echo "alias k='kubectl'" >> /home/vagr• In the second one (ServerWorker), in agent mode.ant/.bashrc
     SHELL
   end
 
