@@ -1,5 +1,8 @@
 #!/bin/bash
 
+apt-get update -y
+apt-get install -y curl
+
 # Install K3s in server mode
 curl -sfL https://get.k3s.io | sh -
 
