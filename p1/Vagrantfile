@@ -1,56 +1,67 @@
 Vagrant.configure("2") do |config|
-  config.vm.box = "ubuntu/jammy64"
 
-  # ================================================= =
-  # 1. SERVER NODE (Controller)
-  # ================================================= =
-  config.vm.define "ael-aminS" do |s|
-    s.vm.hostname = "ael-aminS"
-    s.vm.network "private_network", ip: "192.168.56.110"
-    
-    s.vm.provider "virtualbox" do |v|
-      v.name = "ael-aminS"
-      v.memory = 2048
-      v.cpus = 2
+  # Shared variables
+  SERVER_IP = "192.168.56.110"
+  TOKEN     = "ael-amin-cluster-token"
+
+  # =========================
+  # Machine 1: Controller
+  # =========================
+  config.vm.define "ael-aminS" do |server|
+    server.vm.box = "debian/bookworm64"
+    server.vm.hostname = "ael-aminS"
+    server.vm.network "private_network", ip: SERVER_IP
+
+    server.vm.provider "virtualbox" do |vb|
+      vb.memory = 2048
+      vb.cpus = 2
+      vb.name = "ael-aminS"
     end
 
-    s.vm.provision "shell", inline: <<-SHELL
-      echo "Installing K3s Server..."
-      # Install K3s and force it to use the specific eth1/enp0s8 IP for the cluster
-      curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--node-ip=192.168.56.110 --flannel-iface=enp0s8" sh -
-      
-      # Wait for token to be generated
-      sleep 10
-      
-      # Copy the token to the shared /vagrant folder so the Worker can read it
-      sudo cp /var/lib/rancher/k3s/server/node-token /vagrant/node-token
-      sudo chmod 644 /vagrant/node-token
+    server.vm.provision "shell", inline: <<-SHELL
+      apt update -y
+      apt install -y curl
+
+      # Install K3s in server mode
+      curl -sfL https://get.k3s.io | \
+      INSTALL_K3S_EXEC="server --node-ip=#{SERVER_IP}" \
+      K3S_TOKEN="#{TOKEN}" sh -
+
+      echo "K3s controller ready"
     SHELL
   end
 
-  # ================================================= =
-  # 2. WORKER NODE (Agent)
-  # ================================================= =
-  config.vm.define "ael-aminSW" do |sw|
-    sw.vm.hostname = "ael-aminSW"
-    sw.vm.network "private_network", ip: "192.168.56.111"
-    
-    sw.vm.provider "virtualbox" do |v|
-      v.name = "ael-aminSW"
-      v.memory = 1024
-      v.cpus = 1
+  # =========================
+  # Machine 2: Agent
+  # =========================
+  config.vm.define "ael-aminSW" do |worker|
+    worker.vm.box = "debian/bookworm64"
+    worker.vm.hostname = "ael-aminSW"
+    worker.vm.network "private_network", ip: "192.168.56.111"
+
+    worker.vm.provider "virtualbox" do |vb|
+      vb.memory = 1024
+      vb.cpus = 1
+      vb.name = "ael-aminSW"
     end
 
-    sw.vm.provision "shell", inline: <<-SHELL
-      echo "Installing K3s Worker..."
-      # Wait until the server has shared the token
-      while [ ! -f /vagrant/node-token ]; do sleep 2; done
-      
-      TOKEN=$(cat /vagrant/node-token)
-      SERVER_IP="192.168.56.110"
-      
-      # Install K3s Agent and connect to Server
-      curl -sfL https://get.k3s.io | K3S_URL=https://${SERVER_IP}:6443 K3S_TOKEN=${TOKEN} INSTALL_K3S_EXEC="--node-ip=192.168.56.111 --flannel-iface=enp0s8" sh -
+    worker.vm.provision "shell", inline: <<-SHELL
+      apt update -y
+      apt install -y curl
+
+      # Wait for server API to be reachable
+      until nc -z #{SERVER_IP} 6443; do
+        sleep 3
+      done
+
+      # Install K3s agent
+      curl -sfL https://get.k3s.io | \
+      K3S_URL="https://#{SERVER_IP}:6443" \
+      K3S_TOKEN="#{TOKEN}" \
+      INSTALL_K3S_EXEC="agent --node-ip=192.168.56.111" sh -
+
+      echo "K3s agent joined"
     SHELL
   end
+
 end
