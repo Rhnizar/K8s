@@ -10,8 +10,8 @@ Vagrant.configure("2") do |config|
     
     s.vm.provider "virtualbox" do |v|
       v.name = "ael-aminS"
-      v.memory = 1024
-      v.cpus = 1
+      v.memory = 2048
+      v.cpus = 2
     end
 
     s.vm.provision "shell", inline: <<-SHELL
