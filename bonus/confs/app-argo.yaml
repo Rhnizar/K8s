@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rrhnizar-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    # Update this to match the Gitea repo you create from the browser.
+    repoURL: http://gitea-http.gitea.svc.cluster.local:3000/root/argocd_app_rrhnizar.git
+    path: manifests
+    targetRevision: main
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
